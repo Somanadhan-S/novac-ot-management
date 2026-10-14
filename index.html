@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Novac OT Management</title>
+<title>Novac OT Management (Copy)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style/dist/xlsx.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <style>
 /* ============================================================
    NOVAC OT MANAGEMENT — STYLE SHEET
@@ -266,6 +267,13 @@ tbody tr:last-child td{border-bottom:none;}
 
 .section-title{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
 .section-title h3{font-size:15px;}
+.demo-banner{background:rgba(245,158,11,.15);color:#8a5a08;border:1px solid rgba(245,158,11,.4);border-radius:8px;padding:8px 12px;font-size:12.5px;margin-bottom:16px;}
+:root[data-theme="dark"] .demo-banner{color:#F5C56B;}
+.badge-danger{background:rgba(220,38,38,.12);color:var(--danger);}
+.badge-muted{background:rgba(91,107,127,.15);color:var(--text-muted);}
+.chart-box{position:relative;height:240px;}
+.hidden{display:none !important;}
+.note{font-size:13px;color:var(--text-muted);margin:0 0 14px;}
 </style>
 </head>
 <body>
@@ -291,17 +299,25 @@ tbody tr:last-child td{border-bottom:none;}
 <!-- ================= SIDEBAR ================= -->
 <nav class="sidebar" id="sidebar" aria-label="Primary navigation">
   <div class="nav-section-label">Menu</div>
-  <button class="nav-item active" data-view="home"><span class="ic">🏠</span> OT Home</button>
+  <button class="nav-item active" data-view="home"><span class="ic">🏠</span> Dashboard</button>
   <button class="nav-item" data-view="form"><span class="ic">➕</span> OT Entry</button>
-  <button class="nav-item" data-view="records"><span class="ic">📋</span> View Records</button>
-  <button class="nav-item" data-view="summary"><span class="ic">📊</span> Summary</button>
+  <button class="nav-item" data-view="records"><span class="ic">📋</span> OT Records</button>
+  <button class="nav-item" data-view="summary"><span class="ic">📊</span> Monthly Reports</button>
   <button class="nav-item" data-view="export"><span class="ic">📥</span> Export Excel</button>
+  <div class="nav-section-label">Control</div>
+  <button class="nav-item" data-view="quality"><span class="ic">🛡</span> Data Quality</button>
+  <button class="nav-item" data-view="submissions"><span class="ic">📨</span> Monthly Submissions</button>
+  <button class="nav-item" data-view="audit"><span class="ic">🧾</span> Audit Log</button>
   <div class="nav-section-label">Configuration</div>
-  <button class="nav-item" data-view="admin"><span class="ic">⚙</span> Admin</button>
+  <button class="nav-item" data-view="admin"><span class="ic">⚙</span> Employee Master</button>
+  <button class="nav-item" data-view="holidays"><span class="ic">📅</span> Holiday Master</button>
+  <button class="nav-item" data-view="settings"><span class="ic">🔧</span> Settings &amp; Users</button>
+  <button class="nav-item hidden" id="navUsers" data-view="users"><span class="ic">👤</span> User Management</button>
 </nav>
 
 <!-- ================= MAIN ================= -->
 <main class="main">
+  <div class="demo-banner"><strong>Local Demo Mode</strong> — records are stored only in this browser (localStorage), are not shared between users or computers, and sample employees/holidays are demo data. No login is simulated.</div>
 
   <!-- ========== HOME / DASHBOARD ========== -->
   <section class="view active" id="view-home">
@@ -326,6 +342,12 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
 
     <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="summary-grid">
+      <div class="card"><div class="section-title"><h3>OT hours trend (2026)</h3></div><div class="chart-box"><canvas id="chTrend"></canvas></div></div>
+      <div class="card"><div class="section-title"><h3>OT hours by department (selected month)</h3></div><div class="chart-box"><canvas id="chDept"></canvas></div></div>
+      <div class="card"><div class="section-title"><h3>Top employees by OT hours</h3></div><div class="chart-box"><canvas id="chTop"></canvas></div></div>
+      <div class="card"><div class="section-title"><h3>Weekday vs weekend/holiday</h3></div><div class="chart-box"><canvas id="chSplit"></canvas></div></div>
+    </div>
 
     <h3 style="margin-bottom:12px; font-size:15px;">Quick actions</h3>
     <div class="quick-grid">
@@ -421,10 +443,14 @@ tbody tr:last-child td{border-bottom:none;}
         <input type="text" id="searchInput" placeholder="Search employee / code...">
         <select id="filterMonth"><option value="">All Months</option></select>
         <select id="filterTeam"><option value="">All Teams</option></select>
+        <select id="filterDept"><option value="">All Depts</option><option>ID</option><option>GD</option><option>PDN</option></select>
+        <input type="date" id="filterFrom" title="From date" aria-label="From date">
+        <input type="date" id="filterTo" title="To date" aria-label="To date">
         <select id="filterEmployee"><option value="">All Employees</option></select>
         <select id="filterStatus"><option value="">All Status</option><option value="Valid">Valid</option></select>
         <select id="filterDayType"><option value="">All Day Types</option><option value="Weekday">Weekday</option><option value="Weekend">Weekend</option><option value="Holiday">Holiday</option></select>
         <button class="btn btn-outline btn-sm" id="clearFiltersBtn">Clear</button>
+        <button class="btn btn-outline btn-sm" id="exportFilteredBtn">Export filtered</button>
       </div>
     </div>
 
@@ -484,6 +510,7 @@ tbody tr:last-child td{border-bottom:none;}
           <input type="text" id="admEmpName" placeholder="Emp Name">
           <input type="text" id="admEmpTeam" placeholder="Team">
           <input type="text" id="admEmpLead" placeholder="Lead">
+          <select id="admEmpDept" aria-label="Department"><option>ID</option><option>GD</option><option>PDN</option></select>
         </div>
         <button class="btn btn-primary btn-sm" id="admAddEmpBtn" style="margin-bottom:14px;">+ Add Employee</button>
         <div id="admEmployeeTable"></div>
@@ -501,6 +528,44 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
   </section>
 
+  <section class="view" id="view-quality">
+    <div class="page-head"><h1>Data Quality</h1><p id="dqDenom"></p></div>
+    <div id="dqHolder"></div>
+  </section>
+  <section class="view" id="view-submissions">
+    <div class="page-head"><h1>Monthly Submissions</h1><p>Department submission status for the month selected on the Dashboard.</p></div>
+    <div class="demo-banner">Demonstration workflow only: transitions are simulated in this browser and are not securely enforced (no login, no separation of submitter and approver).</div>
+    <div id="subHolder"></div>
+  </section>
+  <section class="view" id="view-audit">
+    <div class="page-head"><h1>Audit Log</h1><p>Browser-local demonstration log. Not tamper-proof and not centrally maintained. Secrets are never logged.</p></div>
+    <div id="auditHolder"></div>
+  </section>
+  <section class="view" id="view-settings">
+    <div class="page-head"><h1>Settings &amp; User Management</h1><p>Local Demo Mode</p></div>
+    <div class="card" style="max-width:640px;margin-bottom:18px;">
+      <h3 style="margin-bottom:8px;">Demo data</h3>
+      <p class="note">Records, masters, submissions and the audit log are saved in this browser only. They are not shared between users or computers. Please do not enter real employee information.</p>
+      <button class="btn btn-danger" id="resetDemoBtn">Reset Demo Data</button>
+    </div>
+    <div class="card" style="max-width:640px;">
+      <h3 style="margin-bottom:8px;">Users &amp; roles</h3>
+      <p class="note" style="margin:0;">Admin, ID, GD and PDN accounts, password changes and enforced department access need a secure backend login, planned for a later phase (existing Firebase rules are preserved). This demo has no login, so none of this is simulated.</p>
+    </div>
+  </section>
+  <section class="view" id="view-users">
+    <div class="page-head"><h1>User Management</h1><p>Admin only. Access is enforced by Firestore Security Rules, not by this page.</p></div>
+    <div class="card" style="margin-bottom:18px;"><div class="section-title"><h3>Give a person access</h3></div>
+      <p class="note">1) Firebase Console &rarr; Authentication &rarr; Users &rarr; <strong>Add user</strong> (email + password). 2) Copy the new user's <strong>User UID</strong>. 3) Paste it here with a display name and role. To reset a password: Console &rarr; Authentication &rarr; Users &rarr; &#8942; &rarr; Reset password (an email is sent).</p>
+      <div class="admin-add-form">
+        <input type="text" id="uUid" placeholder="User UID from Firebase" autocomplete="off">
+        <input type="text" id="uName" placeholder="Display name" autocomplete="off">
+        <select id="uRole" aria-label="Role"><option>ID</option><option>PDN</option><option>GD</option><option>admin</option></select>
+      </div>
+      <button class="btn btn-primary btn-sm" id="uCreateBtn">+ Save access</button>
+    </div>
+    <div id="usersHolder"></div>
+  </section>
 </main>
 
 <div id="toast-container" aria-live="polite"></div>
@@ -532,20 +597,14 @@ tbody tr:last-child td{border-bottom:none;}
 const STORAGE_KEY = 'novacOTRecords';
 const MAX_DURATION_HOURS = 16;
 const CURRENT_USER = 'Team Lead';
+const DEPTS = ['ID','GD','PDN'];
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTH_OPTIONS = MONTHS.map((m,i)=>({ value: (2026)+'-'+String(i+1).padStart(2,'0'), label: m+' 2026' }));
 
-const defaultEmployeeMaster = [
-  { empCode:'S4057', empName:'Somanadhan S', team:'Data', lead:'Senthil', active:true },
-  { empCode:'B652',  empName:'Dharan',        team:'Data', lead:'Senthil', active:true },
-  { empCode:'R1563', empName:'Ronald',        team:'QA',   lead:'Kumar',   active:true }
-];
+const defaultEmployeeMaster = [];
 
-const defaultHolidayMaster = [
-  { date:'2026-10-02', name:'Gandhi Jayanti', type:'Public' },
-  { date:'2026-12-25', name:'Christmas',      type:'Public' }
-];
+const defaultHolidayMaster = [];
 
 /* ------------------------------------------------------------
    MODULE: storage.js — Persistence layer
@@ -586,6 +645,7 @@ function saveStore(){
 }
 
 let store = loadStore();
+normalizeStore();
 
 /* ------------------------------------------------------------
    MODULE: ot-calculation.js — Business rule engine
@@ -755,9 +815,10 @@ function addOrUpdateOTRecord(){
       inDate: f.inDate, inTime: f.inTime, outDate: f.outDate, outTime: f.outTime,
       totalDurationHours: calc.totalDurationHours, otHours: calc.otHours,
       dayType: calc.dayType, otType: calc.otType, status:'Valid',
-      modifiedBy: CURRENT_USER, modifiedDate: nowIso
+      dept: emp.dept, modifiedBy: CURRENT_USER, modifiedDate: nowIso
     });
     saveStore();
+    addAudit('OT record updated', f.empCode, calc.otHours.toFixed(2)+' h');
     toast('✓ OT record updated successfully.', 'success');
     exitEditMode();
   }else{
@@ -767,10 +828,11 @@ function addOrUpdateOTRecord(){
       inDate: f.inDate, inTime: f.inTime, outDate: f.outDate, outTime: f.outTime,
       totalDurationHours: calc.totalDurationHours, otHours: calc.otHours,
       dayType: calc.dayType, otType: calc.otType, status:'Valid',
-      enteredBy: CURRENT_USER, enteredDate: nowIso, modifiedBy:'', modifiedDate:''
+      dept: emp.dept, enteredBy: CURRENT_USER, enteredDate: nowIso, modifiedBy:'', modifiedDate:''
     };
     store.records.push(rec);
     saveStore();
+    addAudit('OT record added', f.empCode, calc.otHours.toFixed(2)+' h');
     toast('✓ OT record added successfully.', 'success');
   }
 
@@ -786,6 +848,7 @@ function addOrUpdateOTRecord(){
 
 let pendingDeleteId = null;
 function requestDelete(id){
+  if(isLocked(id)) return;
   pendingDeleteId = id;
   document.getElementById('deleteModal').classList.add('show');
 }
@@ -795,6 +858,7 @@ function confirmDelete(){
     saveStore();
     renderDashboard();
     renderRecordsTable();
+    addAudit('OT record deleted', pendingDeleteId);
     toast('OT record deleted.', 'success');
   }
   pendingDeleteId = null;
@@ -806,6 +870,7 @@ function cancelDelete(){
 }
 
 function startEdit(id){
+  if(isLocked(id)) return;
   const rec = store.records.find(r => r.id === id);
   if(!rec) return;
   editingRecordId = id;
@@ -899,6 +964,9 @@ function getFilteredRecords(){
   const emp = document.getElementById('filterEmployee').value;
   const status = document.getElementById('filterStatus').value;
   const dayType = document.getElementById('filterDayType').value;
+  const dept = document.getElementById('filterDept').value;
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
   return store.records.filter(r=>{
     if(q && !(r.empName.toLowerCase().includes(q) || r.empCode.toLowerCase().includes(q))) return false;
     if(month && r.inDate.slice(0,7) !== month) return false;
@@ -906,6 +974,9 @@ function getFilteredRecords(){
     if(emp && r.empCode !== emp) return false;
     if(status && r.status !== status) return false;
     if(dayType && r.dayType !== dayType) return false;
+    if(dept && r.dept !== dept) return false;
+    if(from && r.inDate < from) return false;
+    if(to && r.inDate > to) return false;
     return true;
   }).sort((a,b)=> b.inDate.localeCompare(a.inDate) || b.inTime.localeCompare(a.inTime));
 }
@@ -926,7 +997,7 @@ function renderRecordsTable(){
       '<td>'+(i+1)+'</td>'+
       '<td>'+escapeHtml(r.empCode)+'</td>'+
       '<td>'+escapeHtml(r.empName)+'</td>'+
-      '<td>'+escapeHtml(r.team)+'</td>'+
+      '<td>'+escapeHtml(r.dept||'')+'</td><td>'+escapeHtml(r.team)+'</td>'+
       '<td>'+formatDateDisplay(r.inDate)+' '+formatTimeDisplay(r.inTime)+'</td>'+
       '<td>'+formatDateDisplay(r.outDate)+' '+formatTimeDisplay(r.outTime)+'</td>'+
       '<td style="text-align:right;">'+r.otHours.toFixed(2)+'</td>'+
@@ -939,7 +1010,7 @@ function renderRecordsTable(){
     '</tr>';
   }).join('');
   holder.innerHTML = '<div class="table-wrap"><table><thead><tr>'+
-    '<th>S.No</th><th>Emp Code</th><th>Employee</th><th>Team</th><th>In</th><th>Out</th><th>OT (hrs)</th><th>Type</th><th>Status</th><th>Action</th>'+
+    '<th>S.No</th><th>Emp Code</th><th>Employee</th><th>Dept</th><th>Team</th><th>In</th><th>Out</th><th>OT (hrs)</th><th>Type</th><th>Status</th><th>Action</th>'+
     '</tr></thead><tbody>'+rows+'</tbody></table></div>';
   holder.querySelectorAll('[data-edit]').forEach(b=> b.addEventListener('click', ()=> startEdit(b.getAttribute('data-edit'))));
   holder.querySelectorAll('[data-delete]').forEach(b=> b.addEventListener('click', ()=> requestDelete(b.getAttribute('data-delete'))));
@@ -1024,17 +1095,7 @@ function styleBodyRows(ws, rowCount, colCount, startRow){
   }
 }
 
-let downloadsCapability; // memoized claude.use("downloads") promise
-function getDownloads(){
-  if(!downloadsCapability){
-    downloadsCapability = (window.claude && typeof window.claude.use === 'function')
-      ? window.claude.use('downloads').catch(()=>null)
-      : Promise.resolve(null);
-  }
-  return downloadsCapability;
-}
-
-async function exportToExcel(){
+function exportToExcel(){
   if(store.records.length === 0){ toast('No records to export.', 'error'); return; }
 
   const monthValue = store.settings.currentMonth;
@@ -1107,33 +1168,8 @@ async function exportToExcel(){
     ? 'OT_Submission_'+teams[0]+'_'+monthInfo.label.split(' ')[0]+'_'+year+'.xlsx'
     : 'OT_Submission_'+monthInfo.label.split(' ')[0]+'_'+year+'.xlsx';
 
-  const wbArrayBuffer = XLSX.write(wb, { bookType:'xlsx', type:'array' });
-  const blob = new Blob([wbArrayBuffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-  const downloads = await getDownloads();
-  if(!downloads){
-    toast('Downloads are not available in this view. Open the artifact in a new tab and try again.', 'error');
-    return;
-  }
-  try{
-    const result = await downloads.save({ filename, data: blob });
-    if(result.status === 'saved'){
-      toast('Excel workbook downloaded: '+filename, 'success');
-    }else{
-      toast('Excel workbook sent: '+filename, 'success');
-    }
-  }catch(err){
-    const code = err && err.code;
-    if(code === 'declined'){
-      toast('Download cancelled.', '');
-    }else if(code === 'too_large'){
-      toast('This workbook is too large to download here. Try exporting a single month.', 'error');
-    }else if(code === 'rate_limited'){
-      toast('A download prompt is already open. Please try again.', 'error');
-    }else{
-      toast('Could not download the workbook: '+(err && err.message ? err.message : 'unknown error'), 'error');
-    }
-  }
+  XLSX.writeFile(wb, filename);
+  toast('Excel workbook downloaded: '+filename, 'success');
 }
 function renderExportView(){
   const recs = recordsForMonth(store.settings.currentMonth);
@@ -1149,8 +1185,8 @@ function renderExportView(){
    ------------------------------------------------------------ */
 function renderAdmin(){
   const empHolder = document.getElementById('admEmployeeTable');
-  empHolder.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Code</th><th>Name</th><th>Team</th><th>Lead</th><th>Status</th><th>Action</th></tr></thead><tbody>'+
-    store.employees.map((e,i)=>'<tr><td>'+escapeHtml(e.empCode)+'</td><td>'+escapeHtml(e.empName)+'</td><td>'+escapeHtml(e.team)+'</td><td>'+escapeHtml(e.lead)+'</td>'+
+  empHolder.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Code</th><th>Name</th><th>Dept</th><th>Team</th><th>Lead</th><th>Status</th><th>Action</th></tr></thead><tbody>'+
+    store.employees.map((e,i)=>'<tr><td>'+escapeHtml(e.empCode)+'</td><td>'+escapeHtml(e.empName)+'</td><td><select data-emp-dept="'+i+'" aria-label="Department">'+DEPTS.map(d=>'<option'+(d===e.dept?' selected':'')+'>'+d+'</option>').join('')+'</select></td><td>'+escapeHtml(e.team)+'</td><td>'+escapeHtml(e.lead)+'</td>'+
       '<td><span class="badge '+(e.active!==false?'badge-success':'badge-warn')+'">'+(e.active!==false?'Active':'Inactive')+'</span></td>'+
       '<td><div class="row-actions"><button class="btn btn-outline btn-sm" data-toggle-emp="'+i+'">'+(e.active!==false?'Deactivate':'Activate')+'</button>'+
       '<button class="btn btn-danger btn-sm" data-del-emp="'+i+'">Delete</button></div></td></tr>').join('')+
@@ -1189,7 +1225,7 @@ document.getElementById('admAddEmpBtn').addEventListener('click', ()=>{
   const lead = document.getElementById('admEmpLead').value.trim();
   if(!code || !name || !team || !lead){ toast('Please fill in all employee fields.', 'error'); return; }
   if(store.employees.some(e=>e.empCode.toLowerCase()===code.toLowerCase())){ toast('An employee with this code already exists.', 'error'); return; }
-  store.employees.push({ empCode:code, empName:name, team, lead, active:true });
+  store.employees.push({ empCode:code, empName:name, team, lead, dept:document.getElementById('admEmpDept').value, active:true });
   saveStore();
   ['admEmpCode','admEmpName','admEmpTeam','admEmpLead'].forEach(id=>document.getElementById(id).value='');
   renderAdmin(); populateEmployeeDropdown(); populateFilterOptions();
@@ -1263,9 +1299,9 @@ function updateCalcCard(){
 
 function showView(viewId){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('view-'+viewId).classList.add('active');
+  document.getElementById('view-'+(viewId==='holidays'?'admin':viewId)).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.getAttribute('data-view')===viewId));
-  const titles = { home:'OT Home', form: editingRecordId ? 'Edit OT Record' : 'OT Entry', records:'View Records', summary:'Summary', export:'Export Excel', admin:'Admin' };
+  const titles = { home:'Dashboard', users:'User Management', quality:'Data Quality', submissions:'Monthly Submissions', audit:'Audit Log', settings:'Settings & Users', holidays:'Holiday Master', form: editingRecordId ? 'Edit OT Record' : 'OT Entry', records:'OT Records', summary:'Monthly Reports', export:'Export Excel', admin:'Employee Master' };
   document.getElementById('headerViewTitle').textContent = titles[viewId] || '';
   if(viewId === 'form'){
     if(!editingRecordId){ document.getElementById('formTitle').textContent = 'OT Entry'; document.getElementById('cancelEditBtn').style.display='none'; }
@@ -1275,7 +1311,10 @@ function showView(viewId){
   if(viewId === 'records'){ populateFilterOptions(); renderRecordsTable(); }
   if(viewId === 'summary'){ renderSummary(); }
   if(viewId === 'export'){ renderExportView(); }
-  if(viewId === 'admin'){ renderAdmin(); }
+  if(viewId === 'admin' || viewId === 'holidays'){ renderAdmin(); adminShow(viewId); }
+  if(viewId === 'quality'){ renderQuality(); }
+  if(viewId === 'submissions'){ renderSubmissions(); }
+  if(viewId === 'audit'){ renderAudit(); }
   if(viewId === 'home'){ renderDashboard(); }
   closeMobileSidebar();
   window.scrollTo({top:0, behavior:'auto'});
@@ -1347,7 +1386,255 @@ function init(){
   renderDashboard();
 }
 
-init();
+/* ------------------------------------------------------------
+   MODULE: upgrade — departments, data quality, submissions,
+   audit log, dashboard charts, settings, 5-sheet export.
+   OT calculation (calculateOT) is unchanged and shared by all.
+   ------------------------------------------------------------ */
+function normalizeStore(){
+  store.audit = Array.isArray(store.audit) ? store.audit : [];
+  store.settings.submissions = store.settings.submissions || {};
+  store.employees.forEach(e=>{ if(!DEPTS.includes(e.dept)) e.dept = 'ID'; });
+  store.records.forEach(r=>{ if(!r.dept){ const e = store.employees.find(x=>x.empCode===r.empCode); r.dept = e ? e.dept : '—'; } });
+}
+function addAudit(action, target, detail){
+  store.audit.unshift({ ts:new Date().toISOString(), actor:CURRENT_USER+' (demo)', action, target:target||'', detail:detail||'' });
+  store.audit = store.audit.slice(0,500);
+  saveStore();
+}
+function askConfirm(title, msg, onYes){
+  const o = document.createElement('div'); o.className = 'modal-overlay show';
+  o.innerHTML = '<div class="modal-box"><h3></h3><p></p><div class="modal-actions"><button class="btn btn-outline">Cancel</button><button class="btn btn-danger">Confirm</button></div></div>';
+  o.querySelector('h3').textContent = title; o.querySelector('p').textContent = msg;
+  const b = o.querySelectorAll('button');
+  b[0].onclick = ()=>o.remove(); b[1].onclick = ()=>{ o.remove(); onYes(); };
+  document.body.appendChild(o);
+}
+function sumHrs(a){ return a.reduce((s,r)=>s+r.otHours,0); }
+
+/* ---- submissions (simulated workflow) ---- */
+function getSub(m,d){
+  const s = store.settings.submissions[m+'|'+d];
+  if(s) return s;
+  return { status: recordsForMonth(m).some(r=>r.dept===d) ? 'Draft' : 'Not Started', comment:'' };
+}
+function setSub(m,d,status,comment){
+  store.settings.submissions[m+'|'+d] = { status, comment:comment||'', updated:new Date().toISOString() };
+  addAudit('Submission: '+status, d+' '+m, comment);
+}
+function isLocked(id){
+  const r = store.records.find(x=>x.id===id);
+  if(!r) return false;
+  if(getSub(r.inDate.slice(0,7), r.dept).status === 'Approved'){ toast('This month is Approved for '+r.dept+'; records are locked. Reopen it on Monthly Submissions (reason required).', 'warn'); return true; }
+  return false;
+}
+function subBadge(s){
+  const c = s==='Approved'?'badge-success': s==='Submitted'?'badge-info': s==='Returned for Correction'?'badge-danger': s==='Draft'?'badge-cyan':'badge-muted';
+  return '<span class="badge '+c+'">'+s+'</span>';
+}
+
+/* ---- data quality ---- */
+const DQ_CATS = ['Missing required fields','Invalid start or end date-time','Duplicate entries','Excessive shift duration','Invalid employee code','Employee/department mismatch','Holiday calendar mismatch','Calculation discrepancy','Inconsistent submission status'];
+function dqIssues(){
+  const out = [], seen = {};
+  store.records.forEach(r=>{
+    const add = (cat,sev,why,fix)=>out.push({ cat, sev, id:r.id, rec:r, emp:r.empCode+' '+r.empName, why, fix });
+    if(!r.empCode || !r.inDate || !r.inTime || !r.outDate || !r.outTime){ add('Missing required fields','High','A required field is empty.','Edit the record and complete all fields.'); return; }
+    const c = calculateOT({ empCode:r.empCode, inDate:r.inDate, inTime:r.inTime, outDate:r.outDate, outTime:r.outTime });
+    const emp = store.employees.find(e=>e.empCode===r.empCode);
+    if(!c.valid){
+      add(/after In/.test(c.error)?'Invalid start or end date-time': /unusually/.test(c.error)?'Excessive shift duration':'Calculation discrepancy','High',c.error,'Correct the timings.');
+    }else{
+      if(Math.abs(c.otHours - r.otHours) > 0.01) add('Calculation discrepancy','Medium','Saved '+r.otHours.toFixed(2)+' h but the current rules give '+c.otHours.toFixed(2)+' h.','Open and re-save to recalculate.');
+      if(c.dayType !== r.dayType) add('Holiday calendar mismatch','Medium','Saved as '+r.dayType+' but the calendar now gives '+c.dayType+'.','Open and re-save the record.');
+    }
+    if(!emp) add('Invalid employee code','High','Code is not in the Employee Master.','Add the employee or correct the code.');
+    else if(emp.dept !== r.dept) add('Employee/department mismatch','Low','Record dept '+r.dept+' differs from master dept '+emp.dept+' (history is never changed automatically).','Confirm which department is correct.');
+    const k = [r.empCode,r.inDate,r.inTime,r.outDate,r.outTime].join('|');
+    if(seen[k]) add('Duplicate entries','High','Same employee and timings as another record.','Delete the duplicate.');
+    seen[k] = 1;
+  });
+  Object.keys(store.settings.submissions).forEach(k=>{
+    const [m,d] = k.split('|'), s = store.settings.submissions[k].status;
+    if((s==='Submitted'||s==='Approved') && out.some(i=>i.rec && i.rec.dept===d && i.rec.inDate.slice(0,7)===m))
+      out.push({ cat:'Inconsistent submission status', sev:'Medium', id:null, rec:null, emp:d+' '+m, why:s+' while flagged records exist.', fix:'Reopen or return the submission, then correct the records.' });
+  });
+  return out;
+}
+function renderQuality(){
+  const iss = dqIssues(), total = store.records.length;
+  const flagged = new Set(iss.filter(i=>i.id).map(i=>i.id)).size;
+  const rejected = store.settings.errorCount + store.settings.duplicateCount;
+  document.getElementById('dqDenom').textContent = 'Error rate = flagged saved records ÷ all saved records ('+flagged+' ÷ '+total+' = '+(total?(flagged/total*100).toFixed(1):'0.0')+'%). Rejected attempts ('+rejected+') were never saved and are counted separately.';
+  const cnt = {}; iss.forEach(i=>cnt[i.cat]=(cnt[i.cat]||0)+1);
+  const sevB = s=>'<span class="badge '+(s==='High'?'badge-danger':s==='Medium'?'badge-warn':'badge-info')+'">'+s+'</span>';
+  let h = '<div class="card" style="margin-bottom:18px;"><div class="section-title"><h3>Flagged saved records: '+flagged+'</h3></div><div class="table-wrap"><table style="min-width:0"><thead><tr><th>Category</th><th>Count</th></tr></thead><tbody>'+
+    DQ_CATS.map(c=>'<tr><td>'+c+'</td><td>'+(cnt[c]||0)+'</td></tr>').join('')+'</tbody></table></div></div>';
+  h += iss.length ? '<div class="table-wrap"><table><thead><tr><th>Category</th><th>Severity</th><th>Employee</th><th>Record</th><th>Issue</th><th>Suggested correction</th><th></th></tr></thead><tbody>'+
+    iss.map(i=>'<tr><td>'+i.cat+'</td><td>'+sevB(i.sev)+'</td><td>'+escapeHtml(i.emp)+'</td><td>'+escapeHtml(i.id||'—')+'</td><td style="white-space:normal">'+escapeHtml(i.why)+'</td><td style="white-space:normal">'+escapeHtml(i.fix)+'</td><td>'+(i.id?'<button class="btn btn-outline btn-sm" data-dq-edit="'+i.id+'">Open</button>':'')+'</td></tr>').join('')+'</tbody></table></div>'
+    : '<div class="empty-state"><div class="ic">✅</div><h3>No flagged records.</h3><p>All saved records pass the current checks.</p></div>';
+  const holder = document.getElementById('dqHolder'); holder.innerHTML = h;
+  holder.querySelectorAll('[data-dq-edit]').forEach(b=>b.onclick=()=>startEdit(b.getAttribute('data-dq-edit')));
+}
+function deptFlagged(m,d,iss){ return new Set(iss.filter(i=>i.rec && i.rec.dept===d && i.rec.inDate.slice(0,7)===m).map(i=>i.id)).size; }
+
+function renderSubmissions(){
+  const m = store.settings.currentMonth, iss = dqIssues();
+  const rows = DEPTS.map(d=>{
+    const rs = recordsForMonth(m).filter(r=>r.dept===d), s = getSub(m,d), fl = deptFlagged(m,d,iss);
+    const btn = (a,t,c)=>'<button class="btn '+c+' btn-sm" data-sub="'+a+'" data-d="'+d+'">'+t+'</button>';
+    const act = s.status==='Submitted' ? btn('approve','Approve','btn-success')+btn('return','Return','btn-outline')
+      : s.status==='Approved' ? btn('reopen','Reopen','btn-outline')
+      : btn('submit','Submit','btn-primary');
+    return '<tr><td>'+d+'</td><td>'+rs.length+'</td><td>'+sumHrs(rs).toFixed(1)+'</td><td>'+fl+'</td><td>'+subBadge(s.status)+'</td><td style="white-space:normal">'+escapeHtml(s.comment||'')+'</td>'+
+      '<td><input type="text" id="sc_'+d+'" placeholder="Comment / reason" aria-label="Comment for '+d+'"></td><td><div class="row-actions">'+act+'</div></td></tr>';
+  }).join('');
+  const holder = document.getElementById('subHolder');
+  holder.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Dept</th><th>Records</th><th>OT hrs</th><th>Flagged</th><th>Status</th><th>Last comment</th><th>Comment / reason</th><th>Action</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<p class="note" style="margin-top:12px;">Return and Reopen require a comment. Approved months lock record edits and deletes. Submit is blocked while flagged records exist.</p>';
+  holder.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{
+    const d = b.dataset.d, a = b.dataset.sub, c = (document.getElementById('sc_'+d).value||'').trim();
+    if(a==='submit'){
+      if(!recordsForMonth(m).some(r=>r.dept===d)){ toast('No records to submit for '+d+'.','error'); return; }
+      if(deptFlagged(m,d,dqIssues())){ toast('Fix flagged records first (see Data Quality).','error'); return; }
+      setSub(m,d,'Submitted',c);
+    }else if(a==='approve'){ setSub(m,d,'Approved',c); }
+    else if(a==='return'){ if(!c){ toast('A comment is required to return a submission.','error'); return; } setSub(m,d,'Returned for Correction',c); }
+    else if(a==='reopen'){ if(!c){ toast('A reason is required to reopen.','error'); return; } setSub(m,d,'Draft',c); }
+    renderSubmissions(); renderDashboard();
+  });
+}
+
+function renderAudit(){
+  const h = document.getElementById('auditHolder');
+  h.innerHTML = store.audit.length ? '<div class="table-wrap"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th><th>Detail</th></tr></thead><tbody>'+
+    store.audit.map(a=>'<tr><td>'+new Date(a.ts).toLocaleString()+'</td><td>'+escapeHtml(a.actor)+'</td><td>'+escapeHtml(a.action)+'</td><td>'+escapeHtml(a.target)+'</td><td>'+escapeHtml(a.detail)+'</td></tr>').join('')+'</tbody></table></div>'
+    : '<div class="empty-state"><div class="ic">🧾</div><h3>No audit entries yet.</h3><p>Adding, editing, deleting, submitting and exporting will appear here.</p></div>';
+}
+
+/* ---- admin wrappers ---- */
+function adminShow(v){
+  document.getElementById('admEmployeeTable').closest('.card').classList.toggle('hidden', v==='holidays');
+  document.getElementById('admHolidayTable').closest('.card').classList.toggle('hidden', v!=='holidays');
+}
+const _renderAdmin = renderAdmin;
+renderAdmin = function(){
+  _renderAdmin();
+  document.querySelectorAll('[data-emp-dept]').forEach(s=>s.addEventListener('change', ()=>{
+    const e = store.employees[Number(s.getAttribute('data-emp-dept'))];
+    addAudit('Employee dept changed', e.empCode, e.dept+' → '+s.value);
+    e.dept = s.value; saveStore();
+    toast('Department updated. Existing OT records keep their original department.', 'success');
+  }));
+};
+
+/* ---- dashboard: extra KPIs + charts ---- */
+let charts = {};
+function mk(id, cfg){
+  if(typeof Chart === 'undefined') return;
+  if(charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), cfg);
+}
+function renderCharts(){
+  const recs = recordsForMonth(store.settings.currentMonth);
+  const opt = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } } };
+  const trend = MONTHS.map((_,i)=>sumHrs(store.records.filter(r=>r.inDate.slice(0,7)==='2026-'+pad2(i+1))));
+  mk('chTrend',{ type:'line', data:{ labels:MONTHS.map(x=>x.slice(0,3)), datasets:[{ data:trend, borderColor:'#2563EB', backgroundColor:'rgba(37,99,235,.15)', fill:true, tension:.3 }] }, options:opt });
+  mk('chDept',{ type:'bar', data:{ labels:DEPTS, datasets:[{ data:DEPTS.map(d=>sumHrs(recs.filter(r=>r.dept===d))), backgroundColor:'#06B6D4' }] }, options:opt });
+  const top = buildEmployeeSummary(recs).slice(0,5);
+  mk('chTop',{ type:'bar', data:{ labels:top.map(e=>e.empName), datasets:[{ data:top.map(e=>e.totalOT), backgroundColor:'#12355B' }] }, options:Object.assign({ indexAxis:'y' }, opt) });
+  const wd = sumHrs(recs.filter(r=>r.dayType==='Weekday'));
+  mk('chSplit',{ type:'doughnut', data:{ labels:['Weekday','Weekend/Holiday'], datasets:[{ data:[wd, sumHrs(recs)-wd], backgroundColor:['#2563EB','#F59E0B'] }] }, options:{ responsive:true, maintainAspectRatio:false } });
+}
+const _renderDashboard = renderDashboard;
+renderDashboard = function(){
+  _renderDashboard();
+  const m = store.settings.currentMonth, recs = recordsForMonth(m), grid = document.getElementById('kpiGrid');
+  const wd = sumHrs(recs.filter(r=>r.dayType==='Weekday'));
+  const flagged = new Set(dqIssues().filter(i=>i.id).map(i=>i.id)).size;
+  const approved = DEPTS.filter(d=>getSub(m,d).status==='Approved').length;
+  [['📅','Weekday OT Hrs',wd.toFixed(1),'',()=>showView('records')],
+   ['🎉','Weekend/Holiday Hrs',(sumHrs(recs)-wd).toFixed(1),'',()=>showView('records')],
+   ['🚩','Flagged Records',flagged,flagged?'k-error':'k-ok',()=>showView('quality')],
+   ['📨','Depts Approved',approved+' / '+DEPTS.length,approved===DEPTS.length?'k-ok':'k-warn',()=>showView('submissions')]
+  ].forEach(c=>{
+    const b = document.createElement('button'); b.className = 'kpi-card '+c[3];
+    b.innerHTML = '<div class="ic">'+c[0]+'</div><div class="label">'+c[1]+'</div><div class="val">'+c[2]+'</div>';
+    b.addEventListener('click', c[4]); grid.appendChild(b);
+  });
+  renderCharts();
+};
+
+/* ---- 5-sheet export ---- */
+function exportToExcelLegacy(){}
+function exportToExcel(){
+  const m = store.settings.currentMonth, recs = recordsForMonth(m);
+  if(!recs.length){ toast('No records found for the selected month.', 'error'); return; }
+  const label = (MONTH_OPTIONS.find(x=>x.value===m)||{}).label || m;
+  const wb = XLSX.utils.book_new(), n2 = x=>Number(x.toFixed(2)), iss = dqIssues();
+  const sheet = (name, head, rows, widths)=>{
+    const ws = XLSX.utils.aoa_to_sheet([head].concat(rows));
+    ws['!cols'] = widths.map(w=>({wch:w}));
+    ws['!autofilter'] = { ref:'A1:'+XLSX.utils.encode_cell({ r:0, c:head.length-1 }) };
+    ws['!views'] = [{ state:'frozen', ySplit:1 }];
+    styleHeaderRow(ws, head.length); styleBodyRows(ws, rows.length, head.length, 1);
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  };
+  sheet('OT_Details',['Emp Code','Employee','Dept','Team','Lead','In Date','In Time','Out Date','Out Time','Elapsed Hrs','OT Hrs','Day Type','OT Type','Status'],
+    recs.map(r=>[r.empCode,r.empName,r.dept,r.team,r.lead,formatDateDisplay(r.inDate),formatTimeDisplay(r.inTime),formatDateDisplay(r.outDate),formatTimeDisplay(r.outTime),n2(r.totalDurationHours),n2(r.otHours),r.dayType,r.otType,r.status]),
+    [10,18,7,10,10,12,10,12,10,12,9,10,18,8]);
+  const months = MONTH_OPTIONS.filter(o=>recordsForMonth(o.value).length).map(o=>{
+    const rs = recordsForMonth(o.value), w = sumHrs(rs.filter(r=>r.dayType==='Weekday'));
+    return [o.label, rs.length, new Set(rs.map(r=>r.empCode)).size, n2(sumHrs(rs)), n2(w), n2(sumHrs(rs)-w)];
+  });
+  months.push([],['Reporting period', label],['Exported', new Date().toLocaleString()],['Filters','Selected month, all departments'],['Note','Generated from Novac OT Management']);
+  sheet('Monthly_Summary',['Month','Records','Employees','Total OT Hrs','Weekday OT Hrs','Weekend/Holiday OT Hrs'], months, [26,12,12,14,16,22]);
+  const emps = {};
+  recs.forEach(r=>{ const e = emps[r.empCode] = emps[r.empCode] || { r, n:0, t:0, w:0 }; e.n++; e.t += r.otHours; if(r.dayType==='Weekday') e.w += r.otHours; });
+  sheet('Employee_Summary',['Emp Code','Employee','Dept','Team','Records','Total OT Hrs','Weekday OT Hrs','Weekend/Holiday OT Hrs'],
+    Object.values(emps).sort((a,b)=>b.t-a.t).map(e=>[e.r.empCode,e.r.empName,e.r.dept,e.r.team,e.n,n2(e.t),n2(e.w),n2(e.t-e.w)]), [10,18,7,10,10,14,16,22]);
+  sheet('Data_Quality',['Category','Severity','Employee / Item','Issue','Suggested correction'],
+    iss.length ? iss.map(i=>[i.cat,i.sev,i.emp,i.why,i.fix]) : [['No flagged records','','','','']], [30,10,24,50,40]);
+  sheet('Submission_Status',['Month','Dept','Status','Comment','Last Updated'],
+    DEPTS.map(d=>{ const s = getSub(m,d); return [label,d,s.status,s.comment||'',s.updated?new Date(s.updated).toLocaleString():'']; }), [16,8,24,40,20]);
+  const fn = 'Novac_OT_'+m+'.xlsx';
+  XLSX.writeFile(wb, fn);
+  addAudit('Excel exported', label, fn);
+  toast('Excel workbook generated: '+fn, 'success');
+}
+document.getElementById('exportBtn').replaceWith(document.getElementById('exportBtn').cloneNode(true));
+document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+
+/* ---- records toolbar extras / settings ---- */
+['filterDept','filterFrom','filterTo'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('input', renderRecordsTable); el.addEventListener('change', renderRecordsTable);
+});
+document.getElementById('clearFiltersBtn').addEventListener('click', ()=>{
+  ['filterDept','filterFrom','filterTo'].forEach(id=>document.getElementById(id).value='');
+  renderRecordsTable();
+});
+document.getElementById('exportFilteredBtn').addEventListener('click', ()=>{
+  const r = getFilteredRecords();
+  if(!r.length){ toast('No records match the current filters.', 'error'); return; }
+  const ws = XLSX.utils.json_to_sheet(r.map(x=>({ 'Emp Code':x.empCode, Employee:x.empName, Dept:x.dept, Team:x.team, In:x.inDate+' '+x.inTime, Out:x.outDate+' '+x.outTime, 'OT Hours':Number(x.otHours.toFixed(2)), Type:x.otType, Status:x.status })));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Filtered_OT');
+  XLSX.writeFile(wb, 'Novac_OT_filtered.xlsx');
+  addAudit('Filtered export', r.length+' records');
+  toast('Filtered export generated ('+r.length+' records).', 'success');
+});
+document.getElementById('resetDemoBtn').addEventListener('click', ()=>{
+  askConfirm('Reset demo data?', 'This permanently clears all OT records, masters, submissions and the audit log in this browser.', ()=>{
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    store = defaultStore(); normalizeStore(); saveStore();
+    populateEmployeeDropdown(); populateFilterOptions(); renderDashboard();
+    toast('Demo data reset.', 'success');
+  });
+});
+
+/* init() is started by firebase-layer.js after sign-in */
 </script>
+<script src="firebase-config.js"></script>
+<script type="module" src="firebase-layer.js"></script>
 </body>
 </html>
