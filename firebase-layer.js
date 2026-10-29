@@ -70,6 +70,13 @@ function listen(q, onData) {
   });
 }
 const scoped = name => isAdminUser() ? collection(db, name) : query(collection(db, name), where('dept', '==', me.role));
+const scopedOTRecords = () => isAdminUser()
+  ? collection(db, 'otRecords')
+  : query(
+      collection(db, 'otRecords'),
+      where('dept', '==', me.role),
+      where('enteredBy', '==', me.uid)
+    );
 
 async function enter(user) {
   try {
@@ -80,7 +87,7 @@ async function enter(user) {
     stopListening();
     await Promise.all([
       listen(scoped('employees'), s => { store.employees = s.docs.map(d => d.data()); }),
-      listen(scoped('otRecords'), s => { store.records = s.docs.map(d => ({ id: d.id, ...d.data() })); }),
+      listen(scopedOTRecords(), s => { store.records = s.docs.map(d => ({ id: d.id, ...d.data() })); }),
       listen(collection(db, 'holidays'), s => { store.holidays = s.docs.map(d => d.data()); })]);
     if (isAdminUser()) listen(collection(db, 'users'), s => { usersCache = s.docs.map(d => ({ uid: d.id, ...d.data() })); if (document.getElementById('view-users').classList.contains('active')) renderUsers(); }).catch(() => {});
     setupUi();
