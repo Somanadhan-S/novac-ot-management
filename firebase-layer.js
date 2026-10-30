@@ -50,7 +50,125 @@ function showLogin(msg) {
   o.style.display = ''; o.classList.add('show');
   document.getElementById('lgErr').textContent = msg || '';
 }
-function hideLogin() { const o = document.getElementById('loginOverlay'); if (o) o.style.display = 'none'; }
+
+/* ---------- branded login screen ---------- */
+function showLogin(msg) {
+  let o = document.getElementById('loginOverlay');
+
+  if (!o) {
+    o = document.createElement('div');
+    o.id = 'loginOverlay';
+    o.className = 'login-overlay';
+
+    o.innerHTML = `
+      <div class="login-card">
+        <div class="login-brand">
+          <div class="logo">NOVAC</div>
+          <div class="subtitle">E-Learning Technology</div>
+        </div>
+
+        <h2>Welcome Back</h2>
+        <p class="login-description">
+          Sign in to access the OT Management System.
+          Use the account provided by your Administrator.
+        </p>
+
+        <input
+          type="email"
+          id="lgUser"
+          class="login-field"
+          placeholder="Email address"
+          autocomplete="off"
+          spellcheck="false"
+        >
+
+        <input
+          type="password"
+          id="lgPass"
+          class="login-field"
+          placeholder="Password"
+          autocomplete="new-password"
+        >
+
+        <p id="lgErr" class="login-error"></p>
+
+        <button class="login-button" id="lgBtn">
+          Sign in
+        </button>
+
+        <div class="login-footer">
+          Authorized users only · NOVAC OT Management
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(o);
+
+    const go = async () => {
+      const userInput = document.getElementById('lgUser');
+      const passInput = document.getElementById('lgPass');
+      const error = document.getElementById('lgErr');
+      const button = document.getElementById('lgBtn');
+
+      const u = userInput.value.trim();
+      const p = passInput.value;
+
+      if (!u || !p) {
+        error.textContent = 'Enter your email and password.';
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = 'Signing in...';
+      error.textContent = '';
+
+      try {
+        await signInWithEmailAndPassword(auth, u, p);
+        passInput.value = '';
+      } catch (e) {
+        error.textContent =
+          e.code === 'auth/too-many-requests'
+            ? 'Too many attempts. Wait a few minutes and try again.'
+            : 'Sign-in failed. Check your email and password.';
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Sign in';
+      }
+    };
+
+    document.getElementById('lgBtn').onclick = go;
+
+    document.getElementById('lgPass').addEventListener(
+      'keydown',
+      e => {
+        if (e.key === 'Enter') go();
+      }
+    );
+  }
+
+  document.getElementById('lgUser').value = '';
+  document.getElementById('lgPass').value = '';
+  document.getElementById('lgErr').textContent = msg || '';
+
+  document.body.classList.remove('authenticated');
+  document.body.classList.add('auth-pending');
+
+  o.style.display = 'flex';
+}
+
+function hideLogin() {
+  const o = document.getElementById('loginOverlay');
+
+  if (o) {
+    document.getElementById('lgUser').value = '';
+    document.getElementById('lgPass').value = '';
+    o.style.display = 'none';
+  }
+
+  document.body.classList.remove('auth-pending');
+  document.body.classList.add('authenticated');
+}
+
 function stopListening() { unsubs.forEach(u => u()); unsubs = []; }
 async function signOut() { await fbSignOut(auth); }
 
