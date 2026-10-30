@@ -28,29 +28,6 @@ function friendly(e) {
 }
 
 /* ---------- login screen ---------- */
-function showLogin(msg) {
-  let o = document.getElementById('loginOverlay');
-  if (!o) {
-    o = document.createElement('div'); o.id = 'loginOverlay'; o.className = 'modal-overlay show'; o.style.zIndex = 9999;
-    o.innerHTML = '<div class="modal-box" style="max-width:380px"><h3>Novac OT Management</h3><p class="note">Sign in with the email and password given to you by the Administrator.</p>' +
-      '<div style="display:grid;gap:10px;margin-bottom:12px"><input type="email" id="lgUser" placeholder="Email" autocomplete="username"><input type="password" id="lgPass" placeholder="Password" autocomplete="current-password"></div>' +
-      '<p id="lgErr" style="color:var(--danger);font-size:13px;min-height:18px;margin:0 0 10px"></p><button class="btn btn-primary" id="lgBtn" style="width:100%">Sign in</button></div>';
-    document.body.appendChild(o);
-    const go = async () => {
-      const u = document.getElementById('lgUser').value.trim(), p = document.getElementById('lgPass').value;
-      if (!u || !p) { document.getElementById('lgErr').textContent = 'Enter email and password.'; return; }
-      document.getElementById('lgBtn').disabled = true;
-      try { await signInWithEmailAndPassword(auth, u, p); document.getElementById('lgPass').value = ''; }
-      catch (e) { document.getElementById('lgErr').textContent = (e.code === 'auth/too-many-requests') ? 'Too many attempts. Wait a few minutes and try again.' : 'Sign-in failed. Check your email and password.'; }
-      document.getElementById('lgBtn').disabled = false;
-    };
-    document.getElementById('lgBtn').onclick = go;
-    document.getElementById('lgPass').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-  }
-  o.style.display = ''; o.classList.add('show');
-  document.getElementById('lgErr').textContent = msg || '';
-}
-
 /* ---------- branded login screen ---------- */
 function showLogin(msg) {
   let o = document.getElementById('loginOverlay');
