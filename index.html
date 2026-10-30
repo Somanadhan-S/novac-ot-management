@@ -408,8 +408,13 @@ body.authenticated #loginOverlay {
 /* ---------- LOGIN SCREEN PROTECTION ---------- */
 
 /* Hide the application until a user is authenticated */
-body.auth-pending > *:not(#loginOverlay),
-body:not(.authenticated) > *:not(#loginOverlay) {
+/* Prevent background scrolling while login is displayed */
+body.auth-pending {
+  overflow: hidden;
+}
+
+/* Hide login screen after successful authentication */
+body.authenticated #loginOverlay {
   display: none !important;
 }
 
