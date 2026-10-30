@@ -274,9 +274,139 @@ tbody tr:last-child td{border-bottom:none;}
 .chart-box{position:relative;height:240px;}
 .hidden{display:none !important;}
 .note{font-size:13px;color:var(--text-muted);margin:0 0 14px;}
+
+/* ---------- Authentication screen control ---------- */
+
+/* Hide the entire application until Firebase authentication succeeds. */
+body:not(.authenticated) > :not(#loginOverlay) {
+  display: none !important;
+}
+
+/* Never show the login screen over an authenticated application. */
+body.authenticated #loginOverlay {
+  display: none !important;
+}
+
+/* ---------- Branded NOVAC login screen ---------- */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background:
+    radial-gradient(circle at top left, #245b91, transparent 48%),
+    linear-gradient(135deg, #0D2740, #12355B 60%, #164b73);
+}
+
+.login-card {
+  width: min(100%, 420px);
+  padding: 36px;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #1B2430;
+  box-shadow: 0 24px 70px rgba(0,0,0,.28);
+}
+
+.login-brand {
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.login-brand .logo {
+  font-family: 'Sora', sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #12355B;
+}
+
+.login-brand .subtitle {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+}
+
+.login-card h2 {
+  margin-bottom: 8px;
+  color: #12355B;
+  font-size: 21px;
+}
+
+.login-card .login-description {
+  margin-bottom: 24px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.login-card .login-field {
+  display: block;
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 13px 14px;
+  border: 1px solid #dbe3ec;
+  border-radius: 9px;
+  background: #fff;
+  color: #1B2430;
+  font: inherit;
+  font-size: 14px;
+}
+
+.login-card .login-field:focus {
+  border-color: #2563EB;
+  outline: 2px solid rgba(37,99,235,.12);
+}
+
+.login-card .login-button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px;
+  border: 0;
+  border-radius: 9px;
+  background: #2563EB;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login-card .login-button:hover {
+  background: #1d4ed8;
+}
+
+.login-card .login-button:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.login-error {
+  min-height: 18px;
+  margin: 0 0 10px;
+  color: #DC2626;
+  font-size: 12px;
+}
+
+.login-footer {
+  margin-top: 22px;
+  color: #94a3b8;
+  font-size: 11px;
+  text-align: center;
+}
+
+@media(max-width:480px) {
+  .login-card {
+    padding: 27px 22px;
+  }
+}
+   
 </style>
 </head>
-<body>
+<body class="auth-pending">
 
 <!-- ================= HEADER ================= -->
 <header class="app-header">
