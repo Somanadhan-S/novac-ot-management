@@ -1012,7 +1012,7 @@ function calculateOT(f){
    MODULE: validation.js — Field & business validation
    ------------------------------------------------------------ */
 function clearFieldErrors(){
-  ['empCode','inDate','inTime','outDate','outTime'].forEach(id=>{
+  ['empCode', 'project', 'inDate', 'inTime', 'outDate', 'outTime'].forEach(id => {
     const wrap = document.getElementById('fld-'+id);
     const err = document.getElementById('err-'+id);
     if(wrap) wrap.classList.remove('has-error');
@@ -1033,6 +1033,16 @@ function validateRequiredFields(f){
   if(!f.inTime){ setFieldError('inTime','Please enter In Time.'); ok = false; }
   if(!f.outDate){ setFieldError('outDate','Please enter Out Date.'); ok = false; }
   if(!f.outTime){ setFieldError('outTime','Please enter Out Time.'); ok = false; }
+  if (!f.project) {
+  setFieldError('project', 'Please enter Project Name.');
+  ok = false;
+  }
+  if (f.empCode && !store.employees.some(
+  e => String(e.empCode).trim().toUpperCase() === f.empCode && e.active !== false
+  )) {
+  setFieldError('empCode', 'Employee Code not found or inactive.');
+  ok = false;
+  } 
   return ok;
 }
 function isDuplicateRecord(f, excludeId){
@@ -1049,9 +1059,10 @@ function isDuplicateRecord(f, excludeId){
    ------------------------------------------------------------ */
 let editingRecordId = null;
 
-function getFormData(){
+function getFormData() {
   return {
-    empCode: document.getElementById('empCode').value,
+    empCode: document.getElementById('empCode').value.trim().toUpperCase(),
+    project: document.getElementById('project').value.trim().toUpperCase(),
     inDate: document.getElementById('inDate').value,
     inTime: document.getElementById('inTime').value,
     outDate: document.getElementById('outDate').value,
@@ -1532,21 +1543,29 @@ function toast(message, type){
   setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .25s ease'; setTimeout(()=>el.remove(), 260); }, 4200);
 }
 
-function populateEmployeeDropdown(){
-  const sel = document.getElementById('empCode');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">Select Employee Code</option>' +
-    store.employees.filter(e=>e.active!==false).map(e=>'<option value="'+e.empCode+'">'+e.empCode+' — '+escapeHtml(e.empName)+'</option>').join('');
-  if(current) sel.value = current;
+function populateEmployeeDropdown() {
+  // Employee Code is now typed manually.
 }
-function onEmployeeChange(){
-  const code = document.getElementById('empCode').value;
-  const emp = store.employees.find(e=>e.empCode===code);
+
+function onEmployeeChange() {
+  const code = document.getElementById('empCode').value.trim().toUpperCase();
+  const emp = store.employees.find(
+    e => String(e.empCode).trim().toUpperCase() === code && e.active !== false
+  );
+
   document.getElementById('empName').value = emp ? emp.empName : '';
-  document.getElementById('empTeam').value = emp ? emp.team : '';
+  document.getElementById('empDept').value = emp ? emp.dept : '';
   document.getElementById('empLead').value = emp ? emp.lead : '';
+
+  if (code && !emp) {
+    document.getElementById('empName').value = '';
+    document.getElementById('empDept').value = '';
+    document.getElementById('empLead').value = '';
+  }
+
   updateCalcCard();
 }
+   
 function updateCalcCard(){
   const f = getFormData();
   const statusEl = document.getElementById('calcStatus');
@@ -1625,7 +1644,10 @@ function init(){
   document.getElementById('sidebarScrim').addEventListener('click', closeMobileSidebar);
 
   // Form events
-  document.getElementById('empCode').addEventListener('change', onEmployeeChange);
+  document.getElementById('empCode').addEventListener('input', onEmployeeChange);
+  document.getElementById('project').addEventListener('input', function () {
+  this.value = this.value.toUpperCase();
+});
   ['inDate','inTime','outDate','outTime'].forEach(id=>{
     document.getElementById(id).addEventListener('input', updateCalcCard);
     document.getElementById(id).addEventListener('change', updateCalcCard);
