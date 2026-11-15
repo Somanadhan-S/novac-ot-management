@@ -222,7 +222,7 @@ addOrUpdateOTRecord = async function () {
   if (!emp) { toast('Employee not found in the Employee Master.', 'error'); return; }
   const old = editingRecordId ? store.records.find(r => r.id === editingRecordId) : null;
   const src = old && old.empCode === f.empCode ? old : emp;
-  const data = { empCode: f.empCode, empName: src.empName, dept: old ? old.dept : emp.dept, team: src.team, lead: src.lead,
+  const data = { empCode: f.empCode, empName: src.empName, dept: old ? old.dept : emp.dept, lead: src.lead, project: f.project,
     inDate: f.inDate, inTime: f.inTime, outDate: f.outDate, outTime: f.outTime,
     totalDurationHours: Number(calc.totalDurationHours.toFixed(4)), otHours: Number(calc.otHours.toFixed(4)),
     dayType: calc.dayType, otType: String(calc.otType), status: 'Valid',
