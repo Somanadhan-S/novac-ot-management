@@ -321,7 +321,7 @@ function renderUsers() {
   h.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Role</th><th>Status</th><th>User UID</th><th>Actions</th></tr></thead><tbody>' + usersCache.map(u => {
     const self = u.uid === me.uid;
     return '<tr data-u="' + u.uid + '"><td><input type="text" value="' + escapeHtml(u.username) + '" data-f="username"' + (self ? ' disabled' : '') + '></td><td><select data-f="role"' + (self ? ' disabled' : '') + '>' +
-      ['ID', 'PDN', 'GD', 'admin'].map(r => '<option' + (r === u.role ? ' selected' : '') + '>' + r + '</option>').join('') + '</select></td>' +
+      ['ID', 'PDN', 'QC', 'admin'].map(r => '<option' + (r === u.role ? ' selected' : '') + '>' + r + '</option>').join('') + '</select></td>' +
       '<td><span class="badge ' + (u.active ? 'badge-success' : 'badge-warn') + '">' + (u.active ? 'Active' : 'Deactivated') + '</span></td><td style="font-size:11px;word-break:break-all">' + escapeHtml(u.uid) + '</td>' +
       '<td>' + (self ? '(you)' : '<div class="row-actions"><button class="btn btn-outline btn-sm" data-a="save">Save</button><button class="btn btn-outline btn-sm" data-a="active">' + (u.active ? 'Deactivate' : 'Activate') + '</button></div>') + '</td></tr>';
   }).join('') + '</tbody></table></div>';
