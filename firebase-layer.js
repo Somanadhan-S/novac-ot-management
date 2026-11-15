@@ -263,10 +263,10 @@ function replaceBtn(id, fn) { const o = document.getElementById(id), n = o.clone
 renderAdmin = function () {
   const adm = isAdminUser();
   const eh = document.getElementById('admEmployeeTable');
-  eh.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Code</th><th>Name</th><th>Dept</th><th>Team</th><th>Lead</th><th>Status</th>' + (adm ? '<th>Action</th>' : '') + '</tr></thead><tbody>' +
+  eh.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Code</th><th>Name</th><th>Dept</th><th>Lead</th><th>Status</th>' + (adm ? '<th>Action</th>' : '') + '</tr></thead><tbody>' +
     store.employees.map((e, i) => '<tr><td>' + escapeHtml(e.empCode) + '</td><td>' + escapeHtml(e.empName) + '</td><td>' +
       (adm ? '<select data-emp-dept="' + i + '" aria-label="Department">' + DEPTS.map(d => '<option' + (d === e.dept ? ' selected' : '') + '>' + d + '</option>').join('') + '</select>' : escapeHtml(e.dept)) +
-      '</td><td>' + escapeHtml(e.team) + '</td><td>' + escapeHtml(e.lead) + '</td><td><span class="badge ' + (e.active ? 'badge-success' : 'badge-warn') + '">' + (e.active ? 'Active' : 'Inactive') + '</span></td>' +
+       '</td><td>' + escapeHtml(e.lead) + '</td><td><span class="badge ' + (e.active ? 'badge-success' : 'badge-warn') + '">' + (e.active ? 'Active' : 'Inactive') + '</span></td>' +
       (adm ? '<td><div class="row-actions"><button class="btn btn-outline btn-sm" data-toggle-emp="' + i + '">' + (e.active ? 'Deactivate' : 'Activate') + '</button><button class="btn btn-danger btn-sm" data-del-emp="' + i + '">Delete</button></div></td>' : '') + '</tr>').join('') + '</tbody></table></div>';
   const empRef = e => doc(db, 'employees', e.empCode);
   eh.querySelectorAll('[data-emp-dept]').forEach(s => s.addEventListener('change', async () => {
@@ -293,12 +293,18 @@ renderAdmin = function () {
 };
 replaceBtn('admAddEmpBtn', async () => {
   const v = id => document.getElementById(id).value.trim();
-  const e = { empCode: v('admEmpCode'), empName: v('admEmpName'), dept: v('admEmpDept'), team: v('admEmpTeam'), lead: v('admEmpLead'), active: true };
-  if (!e.empCode || !e.empName || !e.team || !e.lead) { toast('Please fill in all employee fields.', 'error'); return; }
+  const e = {
+  empCode: v('admEmpCode').toUpperCase(),
+  empName: v('admEmpName'),
+  dept: v('admEmpDept'),
+  lead: v('admEmpLead'),
+  active: true
+  };
+  if (!e.empCode || !e.empName || !e.lead) { toast('Please fill in Employee Code, Employee Name and Lead.', 'error'); return; }
   if (!/^[A-Za-z0-9_-]{1,20}$/.test(e.empCode)) { toast('Employee code: letters, numbers, - and _ only (max 20).', 'error'); return; }
   if (store.employees.some(x => x.empCode === e.empCode)) { toast('An employee with this code already exists.', 'error'); return; }
   try { await setDoc(doc(db, 'employees', e.empCode), e); } catch (x) { toast(friendly(x), 'error'); return; }
-  ['admEmpCode', 'admEmpName', 'admEmpTeam', 'admEmpLead'].forEach(id => document.getElementById(id).value = '');
+  ['admEmpCode', 'admEmpName', 'admEmpLead'].forEach(id => document.getElementById(id).value = '');
   toast('✓ Employee added to master.', 'success');
 });
 replaceBtn('admAddHolBtn', async () => {
