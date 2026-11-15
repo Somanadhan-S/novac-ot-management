@@ -634,28 +634,37 @@ body.authenticated #loginOverlay {
 
     <div class="card">
       <div class="form-section">
-        <h3>Employee Details</h3>
-        <div class="form-grid">
-          <div class="field" id="fld-empCode">
-            <label for="empCode">Employee Code</label>
-            <select id="empCode"><option value="">Select Employee Code</option></select>
-            <div class="field-error" id="err-empCode"></div>
-          </div>
-          <div class="field readonly">
-            <label for="empName">Employee Name</label>
-            <input type="text" id="empName" readonly placeholder="—">
-          </div>
-          <div class="field readonly">
-            <label for="empTeam">Team</label>
-            <input type="text" id="empTeam" readonly placeholder="—">
-          </div>
-          <div class="field readonly">
-            <label for="empLead">Lead</label>
-            <input type="text" id="empLead" readonly placeholder="—">
-          </div>
-        </div>
-      </div>
+  <h3>Employee Details</h3>
+  <div class="form-grid">
+    <div class="field" id="fld-empCode">
+      <label for="empCode">Employee Code</label>
+      <input type="text" id="empCode" placeholder="Enter Employee Code">
+      <div class="field-error" id="err-empCode"></div>
+    </div>
 
+    <div class="field readonly">
+      <label for="empName">Employee Name</label>
+      <input type="text" id="empName" readonly placeholder="Auto-filled">
+    </div>
+
+    <div class="field readonly">
+      <label for="empDept">Department</label>
+      <input type="text" id="empDept" readonly placeholder="Auto-filled">
+    </div>
+
+    <div class="field readonly">
+      <label for="empLead">Lead</label>
+      <input type="text" id="empLead" readonly placeholder="Auto-filled">
+    </div>
+
+    <div class="field" id="fld-project">
+      <label for="project">Project Name</label>
+      <input type="text" id="project" placeholder="Enter Project Name">
+      <div class="field-error" id="err-project"></div>
+    </div>
+  </div>
+</div>
+       
       <div class="form-section">
         <h3>OT Timing</h3>
         <div class="form-grid">
