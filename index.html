@@ -839,7 +839,12 @@ body.authenticated #loginOverlay {
       <div class="admin-add-form">
         <input type="text" id="uUid" placeholder="User UID from Firebase" autocomplete="off">
         <input type="text" id="uName" placeholder="Display name" autocomplete="off">
-        <select id="uRole" aria-label="Role"><option>ID</option><option>PDN</option><option>GD</option><option>admin</option></select>
+        <select id="uRole" aria-label="Role">
+  <option value="ID">ID</option>
+  <option value="PDN">PDN</option>
+  <option value="QC">QC</option>
+  <option value="admin">Admin</option>
+</select>
       </div>
       <button class="btn btn-primary btn-sm" id="uCreateBtn">+ Save access</button>
     </div>
